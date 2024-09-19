@@ -23,12 +23,31 @@ class LEDs:
     def setIndex(self, index, color):
         self.pixels[index] = color
     
+    def fill(self, color):
+        self.pixels.fill(color)
+
     def show(self):
         self.pixels.show()
 
     def clear(self):
         self.pixels.fill(LEDs.black_color)
         self.show()
+
+class LEDs_Dummy:
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+    
+    def setXY(self, x, y, color):
+        pass
+    def setIndex(self, index, color):
+        pass
+    def fill(self, color):
+        pass
+    def show(self):
+        pass
+    def clear(self):
+        pass
 
 def func1(led, color):
     for index in range(30):
