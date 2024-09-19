@@ -1,0 +1,72 @@
+import board
+import neopixel
+import logging
+import time
+import random
+
+log = logging.getLogger(__name__)
+
+class LEDs:
+    black_color = (0,0,0)
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.pixels = neopixel.NeoPixel(
+            board.D18, 
+            width * height, 
+            brightness=1, auto_write=False)
+        self.pixels.fill(LEDs.black_color)
+    
+    def setXY(self, x, y, color):
+        self.pixels[y*self.width + x] = color
+
+    def setIndex(self, index, color):
+        self.pixels[index] = color
+    
+    def show(self):
+        self.pixels.show()
+
+    def clear(self):
+        self.pixels.fill(LEDs.black_color)
+        self.show()
+
+def func1(led, color):
+    for index in range(30):
+        led.setIndex(index, color)
+        led.show()
+        time.sleep(1/15)
+
+def func2(led):
+    while True:
+        index = random.randrange(0,30)
+        led.clear()
+        led.setIndex(index, (127,127,127))
+        led.show()
+        time.sleep(1/30)
+
+def run(led):
+    func1(led, (255,0,0))
+    led.clear()
+
+    func1(led, (0,255,0))
+    led.clear()
+
+    func1(led, (0,0,255))
+    led.clear()
+
+    func1(led, (127, 127, 127))
+    led.clear()
+
+
+
+
+if __name__ == "__main__":
+    led = LEDs(5, 6)
+    try:
+        run(led)
+        func2(led)
+    except:
+        led.clear()
+        led.show()
+    
+        
