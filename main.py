@@ -11,6 +11,22 @@ LED_Width = 5
 LED_Height = 6
 LED_Total = LED_Width * LED_Height
 
+# 燈光閃爍特效 a:最低, z:最高, m:預設
+flickerStrings = [
+    'm', # 0 normal
+    'mmnmmommommnonmmonqnmmo', # 1 FLICKER (first variety)
+    'abcdefghijklmnopqrstuvwxyzyxwvutsrqponmlkjihgfedcba', # 2 SLOW STRONG PULSE
+    'mmmmmaaaaammmmmaaaaaabcdefgabcdefg', # 3 CANDLE (first variety)
+    'mamamamamama', # 4 FAST STROBE
+    'jklmnopqrstuvwxyzyxwvutsrqponmlkj', # 5 GENTLE PULSE 1
+    'nmonqnmomnmomomno', # 6 FLICKER (second variety)
+    'mmmaaaabcdefgmmmmaaaammmaamm', # 7 CANDLE (second variety)
+    'mmmaaammmaaammmabcdefaaaammmmabcdefmmmaaaa', # 8 CANDLE (third variety)
+    'aaaaaaaazzzzzzzz', # 9 SLOW STROBE (fourth variety)
+    'mmamammmmammamamaaamammma', # 10 FLUORESCENT FLICKER
+    'abcdefghijklmnopqrrqponmlkjihgfedcba' # 11 SLOW PULSE NOT FADE TO BLACK
+]
+
 def show_power_on(led):
     for y in range(LED_Height):
         led.clear()
