@@ -51,15 +51,15 @@ def main(led, argc):
 
 def parser_opt():
     p = argparse.ArgumentParser()
-    p.add_argument("-d", "--debug", action="store_true", default=False)
-    p.add_argument("-s", "--skip", action="store_true", default=False)
+    p.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
+    p.add_argument("-s", "--skip", action="store_true", default=False, help="skip power on led")
     return p.parse_args()
 
 
 if __name__ == "__main__":
     argc = parser_opt()
     logging.basicConfig(level=logging.DEBUG if argc.debug else logging.INFO)
-
+    log.debug("opt:%s", argc)
     if argc.debug: 
         led = leds.LEDs_Dummy(LED_Width, LED_Height)
     else:
