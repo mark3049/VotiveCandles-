@@ -49,13 +49,13 @@ class LEDs_Dummy:
     def clear(self):
         pass
 
-def func1(led, color):
+def _test_meteor(led, color):
     for index in range(30):
         led.setIndex(index, color)
         led.show()
         time.sleep(1/15)
 
-def func2(led):
+def _test_random(led):
     while True:
         index = random.randrange(0,30)
         led.clear()
@@ -63,27 +63,25 @@ def func2(led):
         led.show()
         time.sleep(1/30)
 
-def run(led):
-    func1(led, (255,0,0))
+def _test_run(led):
+    _test_meteor(led, (255,0,0))
     led.clear()
 
-    func1(led, (0,255,0))
+    _test_meteor(led, (0,255,0))
     led.clear()
 
-    func1(led, (0,0,255))
+    _test_meteor(led, (0,0,255))
     led.clear()
 
-    func1(led, (127, 127, 127))
+    _test_meteor(led, (127, 127, 127))
     led.clear()
-
-
 
 
 if __name__ == "__main__":
     led = LEDs(5, 6)
     try:
-        run(led)
-        func2(led)
+        _test_run(led)
+        _test_random(led)
     except:
         led.clear()
         led.show()
