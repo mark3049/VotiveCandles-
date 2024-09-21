@@ -9,7 +9,7 @@ def read_serial(port):
         return None
     
     line = port.readline().decode("utf-8").rstrip()
-    log.debug("read:%s", line)
+    log.info("read:%s", line)
     if "waiting" in line:
         return None
     values = line.split(",")

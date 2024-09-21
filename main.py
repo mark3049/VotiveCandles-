@@ -9,6 +9,7 @@ import queue
 import random
 import flicker
 from keyboard import KBHit
+from receive import read_serial
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ LightColor = (255,255,255)
 LightStatus = [False for x in range(LED_Width*LED_Height)]
 NEXT_NOISE_MIN_TIME = 10
 NEXT_NOISE_MAX_TIME = 60
-
+Sensitivity = 85
 
 def show_power_on(led):
 
@@ -171,7 +172,18 @@ def get_next_noise():
     log.debug("next noise incoming in %d", next)
     return time.time() + next
 
-def main(leds, kb):
+def read_serial_action(port):
+    v = read_serial(port)
+    if not v:
+        return None
+    s = [ x for x in v if x > Sensitivity]
+    if len(s) > 0: # 任何一個大於90
+        return "d" # down
+    s = [ x for x in v if x < 10]
+    if len(s) == len(v): # 全部小於10
+        return 'u'
+
+def main(leds, kb, port):
     worker = WorkThread(leds)
     worker.start()
     noise_worker = NoiseThread(leds)
@@ -179,31 +191,39 @@ def main(leds, kb):
 
     is_down = False
     noise_time = time.time() + random.randint(10, 60)
-    
     while worker.is_alive():
+        action = None
+
         if kb and kb.kbhit():
             key = kb.getch()
             keycode = ord(key)
             if keycode == 27: # ESC
                 break;
-            elif key == 'd':
-                log.info("down")
-                if not is_down:
-                    if noise_worker.flickered():
-                        noise_worker.flicker_stop()
-                        time.sleep(0.5)
-                    worker.queue.put('down')
-                    is_down = True
-            elif key == 'u':
-                if is_down:
-                    log.info("up")
-                    worker.queue.put('up')
-                    is_down = False
-            elif key == 's':
-                if is_down:
-                    continue
-                noise_time = time.time() - 1
+            else:
+                action = key
         
+        saction = read_serial_action(port)
+        if saction:
+            action = saction
+
+        if action == 'd':
+            log.info("down")
+            if not is_down:
+                if noise_worker.flickered():
+                    noise_worker.flicker_stop()
+                    time.sleep(0.5)
+                worker.queue.put('down')
+                is_down = True
+        elif action == 'u':
+            if is_down:
+                log.info("up")
+                worker.queue.put('up')
+                is_down = False
+        elif action == 's':
+            if is_down:
+                continue
+            noise_time = time.time() - 1
+
         if is_down or noise_worker.flickered(): # 延後發作
             if time.time() > noise_time:
                 noise_time = get_next_noise()
@@ -242,10 +262,12 @@ if __name__ == "__main__":
         if not argc.skip:
             show_power_on(led)
         wait_serial_online(led)
-        main(led, kb)
+        port = serial.Serial('/dev/ttyUSB0',9600)
+        main(led, kb, port)
     except Exception as ex:
         log.exception(ex)
     finally:
+        port.close()
         if kb:
             kb.set_normal_term()
         led.clear()
