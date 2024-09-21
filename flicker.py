@@ -73,5 +73,6 @@ if __name__ == "__main__":
     finally:
         leds.clear()
         leds.show()
+        leds.deinit()
         kb.set_normal_term()
     

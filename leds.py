@@ -3,55 +3,55 @@ import neopixel
 import logging
 import time
 import random
+from collections.abc import Sequence
 
 log = logging.getLogger(__name__)
 
-class LEDs:
+class LEDs(neopixel.NeoPixel):
     black_color = (0,0,0)
     def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.pixels = neopixel.NeoPixel(
-            board.D18, 
+        super().__init__(board.D18, 
             width * height, 
             brightness=1, auto_write=False)
-        self.pixels.fill(LEDs.black_color)
+        self.fill(LEDs.black_color)
     
     def setXY(self, x, y, color):
-        self.pixels[y*self.width + x] = color
-
-    def setIndex(self, index, color):
-        self.pixels[index] = color
+        self[y*self.width + x] = color
     
-    def fill(self, color):
-        self.pixels.fill(color)
-
-    def show(self):
-        self.pixels.show()
-
     def clear(self):
-        self.pixels.fill(LEDs.black_color)
+        self.fill(LEDs.black_color)
         self.show()
 
-class LEDs_Dummy:
+class LEDs_Dummy(Sequence):
     def __init__(self, width, height):
         self.width = width
         self.height = height
+        self.pixels = [ (0,0,0) for x in range(width*height)]
+        super().__init__()
     
     def setXY(self, x, y, color):
         pass
-    def setIndex(self, index, color):
-        pass
+
+    def __getitem__(self, i):
+        return self.pixels[i]
+    
+    def __len__(self):
+        return self.width*self.height
+    
     def fill(self, color):
         pass
+    
     def show(self):
         pass
+    
     def clear(self):
         pass
 
 def _test_meteor(led, color):
     for index in range(30):
-        led.setIndex(index, color)
+        led[index] = color
         led.show()
         time.sleep(1/15)
 
@@ -59,7 +59,7 @@ def _test_random(led):
     while True:
         index = random.randrange(0,30)
         led.clear()
-        led.setIndex(index, (127,127,127))
+        led[index] = (127,127,127)
         led.show()
         time.sleep(1/30)
 
@@ -82,8 +82,10 @@ if __name__ == "__main__":
     try:
         _test_run(led)
         _test_random(led)
-    except:
+    except Exception as e:
+        print("except:", e)
         led.clear()
         led.show()
+        led.deinit()
     
         
