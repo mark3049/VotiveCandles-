@@ -1,4 +1,22 @@
+from leds import LEDs
+from keyboard import KBHit
+import time
 
+# 燈光閃爍特效 a:最低, z:最高, m:預設
+flickerStrings = [
+    'm', # 0 normal
+    'mmnmmommommnonmmonqnmmo', # 1 FLICKER (first variety)
+    'abcdefghijklmnopqrstuvwxyzyxwvutsrqponmlkjihgfedcba', # 2 SLOW STRONG PULSE
+    'mmmmmaaaaammmmmaaaaaabcdefgabcdefg', # 3 CANDLE (first variety)
+    'mamamamamama', # 4 FAST STROBE
+    'jklmnopqrstuvwxyzyxwvutsrqponmlkj', # 5 GENTLE PULSE 1
+    'nmonqnmomnmomomno', # 6 FLICKER (second variety)
+    'mmmaaaabcdefgmmmmaaaammmaamm', # 7 CANDLE (second variety)
+    'mmmaaammmaaammmabcdefaaaammmmabcdefmmmaaaa', # 8 CANDLE (third variety)
+    'aaaaaaaazzzzzzzz', # 9 SLOW STROBE (fourth variety)
+    'mmamammmmammamamaaamammma', # 10 FLUORESCENT FLICKER
+    'abcdefghijklmnopqrrqponmlkjihgfedcba' # 11 SLOW PULSE NOT FADE TO BLACK
+]
 
 class FlickerColor:
     def __init__(self, minColor, maxColor):
@@ -14,8 +32,46 @@ class FlickerColor:
         return self.map[index]
 
 if __name__ == "__main__":
-    color = FlickerColor((0,0,0), (255,255,255))
-    print(color.map)
-    print(color.get('a'))
-    print(color.get('m'))
+    leds = LEDs(5, 6)
+    fc = FlickerColor((0,0,0), (255,255,255))
+    kb = KBHit()
+    leds.clear()
+    select = 0
+    v = flickerStrings[select]
+    index = 0
+    
+    try:
+        while True:
+            if kb.kbhit():
+                c = kb.getch()
+                c_ord = ord(c)
+                if c_ord == 27: # ESC
+                   break
+                elif c == 'w':
+                   select -= 1
+                   if select < 0:
+                       select = 0
+                elif c == 's':
+                    select += 1
+                    if select >= len(flickerStrings):
+                        select = len(flickerStrings) - 1
+                else:
+                    print('key:', c, 'keycode:', c_ord)
+                    continue
+
+                v = flickerStrings[select]
+                index = 0
+                print('key:',c, 'index:', select, 'pattern:', v)
+            color = fc.get(v[index])
+            index += 1
+            if index >= len(v):
+                index = 0
+            # print(index, color)
+            leds.fill(color)
+            leds.show()
+            time.sleep(0.1)
+    finally:
+        leds.clear()
+        leds.show()
+        kb.set_normal_term()
     

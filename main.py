@@ -11,37 +11,29 @@ LED_Width = 5
 LED_Height = 6
 LED_Total = LED_Width * LED_Height
 
-# 燈光閃爍特效 a:最低, z:最高, m:預設
-flickerStrings = [
-    'm', # 0 normal
-    'mmnmmommommnonmmonqnmmo', # 1 FLICKER (first variety)
-    'abcdefghijklmnopqrstuvwxyzyxwvutsrqponmlkjihgfedcba', # 2 SLOW STRONG PULSE
-    'mmmmmaaaaammmmmaaaaaabcdefgabcdefg', # 3 CANDLE (first variety)
-    'mamamamamama', # 4 FAST STROBE
-    'jklmnopqrstuvwxyzyxwvutsrqponmlkj', # 5 GENTLE PULSE 1
-    'nmonqnmomnmomomno', # 6 FLICKER (second variety)
-    'mmmaaaabcdefgmmmmaaaammmaamm', # 7 CANDLE (second variety)
-    'mmmaaammmaaammmabcdefaaaammmmabcdefmmmaaaa', # 8 CANDLE (third variety)
-    'aaaaaaaazzzzzzzz', # 9 SLOW STROBE (fourth variety)
-    'mmamammmmammamamaaamammma', # 10 FLUORESCENT FLICKER
-    'abcdefghijklmnopqrrqponmlkjihgfedcba' # 11 SLOW PULSE NOT FADE TO BLACK
-]
+
 
 def show_power_on(led):
+
+    log.info("begin show power on screen")
+    
+    # up to down
     for y in range(LED_Height):
         led.clear()
-        for level in range(0,128,8):
+        for level in range(0,256,8):
             for x in range(LED_Width):
                 led.setXY(x, y, (level, level, level))
             led.show()
-            time.sleep(0.1)
+            time.sleep(0.02)
+    # left to right
     for x in range(LED_Width):
         led.clear()
-        for level in range(0, 128, 8):
+        for level in range(0, 256, 8):
             for y in range(LED_Height):
                 led.setXY(x, y, (level, level, level))
             led.show()
-            time.sleep(0.1)
+            time.sleep(0.02)
+
 
 def serial_port_exist():
     for p in list(serial.tools.list_ports.comports()):
@@ -54,7 +46,7 @@ def serial_port_exist():
 
 def wait_serial_online(led):
     while not serial_port_exist():
-        led.fill((127,0,0))
+        led.fill((64,0,0))
         led.show()
         time.sleep(1)
         led.fill((0,0,0))
