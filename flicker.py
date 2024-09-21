@@ -19,7 +19,7 @@ flickerStrings = [
 ]
 
 class FlickerColor:
-    def __init__(self, minColor, maxColor):
+    def __init__(self, minColor = (0,0,0), maxColor = (255,255,255)):
         self.map = {}
         array = 'abcdefghijklmnopqrstuvwxyz'
         for i in range(26):
@@ -31,13 +31,28 @@ class FlickerColor:
     def get(self, index):
         return self.map[index]
 
+class FlickerPattern:
+    def __init__(self, pattern, minColor = (0,0,0), maxColor = (255,255,255)):
+        self._map = FlickerColor(minColor, maxColor)
+        self._pattern = pattern
+        self._index = 0
+        self._len = len(pattern)
+    
+    def next(self):
+        c = self._pattern[self._index]
+        self._index = self._index+1 if self._index < self._len -1 else 0
+        return self._map.get(c)
+    def __str__(self):
+        return self._pattern
+
+
 if __name__ == "__main__":
     leds = LEDs(5, 6)
     fc = FlickerColor((0,0,0), (255,255,255))
     kb = KBHit()
     leds.clear()
     select = 0
-    v = flickerStrings[select]
+    v = FlickerPattern(flickerStrings[select])
     index = 0
     
     try:
@@ -59,15 +74,10 @@ if __name__ == "__main__":
                     print('key:', c, 'keycode:', c_ord)
                     continue
 
-                v = flickerStrings[select]
+                v = FlickerPattern(flickerStrings[select])
                 index = 0
                 print('key:',c, 'index:', select, 'pattern:', v)
-            color = fc.get(v[index])
-            index += 1
-            if index >= len(v):
-                index = 0
-            # print(index, color)
-            leds.fill(color)
+            leds.fill(v.next())
             leds.show()
             time.sleep(0.1)
     finally:
