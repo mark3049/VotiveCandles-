@@ -1,0 +1,11 @@
+[Unit]
+ Description=LED Demo
+ After=multi-user.target
+
+ [Service]
+ Type=idle
+ WorkingDirectory=/home/mark3/src
+ ExecStart=/usr/bin/python /home/mark3/src/main.py
+
+ [Install]
+ WantedBy=multi-user.target
