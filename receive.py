@@ -21,7 +21,7 @@ def read_serial(port):
 
 if __name__ == "__main__":
     logging.basicConfig(level = logging.INFO)
-    port = serial.Serial('/dev/ttyUSB0',9600)
+    port = serial.Serial('/dev/ttyUSB0',115200)
     while True:
         time.sleep(1)
         v = read_serial(port)

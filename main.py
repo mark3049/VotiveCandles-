@@ -262,7 +262,7 @@ if __name__ == "__main__":
         if not argc.skip:
             show_power_on(led)
         wait_serial_online(led)
-        port = serial.Serial('/dev/ttyUSB0',9600)
+        port = serial.Serial('/dev/ttyUSB0',115200)
         main(led, kb, port)
     except Exception as ex:
         log.exception(ex)
