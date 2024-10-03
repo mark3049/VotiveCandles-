@@ -25,7 +25,7 @@ class NoiseThread(threading.Thread):
         self._indexs = indexs
         self._flickering = True
         self._total_sec = random.randint(self._duration[0], self._duration[1]) 
-        log.info("shoot %d %s", indexs, self._total_sec)
+        log.info("shoot index:%s sec:%s", str(indexs), self._total_sec)
         return self._total_sec
     
     def Ending(self):

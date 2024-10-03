@@ -28,9 +28,12 @@ class WorkThread(threading.Thread):
 
     def push_down(self):
         darks = [ x for x in range(len(self._leds)) if not self._status[x]]
+        if len(darks) == 0:
+            log.info("all led is active")
+            return
         dark_index = random.choice(darks)
         step = self._kneel_time/len(self._brightening_pattern)/100
-        log.info("index:%d from %s (step:%s sec)",dark_index, darks, step)
+        log.info("index:%d from %s",dark_index, darks)
         fc = flicker.FlickerPattern(pattern=self._brightening_pattern, maxColor=self._lightcolor)
 
         count = 100
