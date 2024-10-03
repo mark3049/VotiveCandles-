@@ -39,11 +39,13 @@ class NoiseThread(threading.Thread):
     def do_flicker(self):
         size = len(self._indexs)
         fcs = []
+        colors = []  # backup color
         for x in range(size):
             fc = flicker.FlickerPattern(pattern=self._pattern, maxColor=self._lightcolor)
             fc.begin(random.randint(0,100))
             fcs.append(fc)
-            
+            colors.append(self._leds[self._indexs[x]])
+        
         count = 0
         log.info("do flicker total:%s sec, pattern:%s", self._total_sec, self._pattern)
         ticks = self._total_sec / time_resolution
@@ -56,8 +58,8 @@ class NoiseThread(threading.Thread):
             if count > ticks:
                 break
         
-        for x in self._indexs:
-            self._leds[x] = self._lightcolor if self._states[x] else (0,0,0)  # 復原燈號
+        for x in range(len(self._indexs)):
+            self._leds[self._indexs[x]] = colors[x]  # 復原燈號
         self._leds.show()
         self.Ending()
         log.info("do flicker successed")
