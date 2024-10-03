@@ -19,7 +19,11 @@ class WorkThread(threading.Thread):
         self._leds.fill((0,0,0))
         self._leds.show()
         self.is_exit = False
+        self._is_down_case = False
     
+    def IsDown(self):
+        return self._is_down_case;
+
     def push_down(self):
         pattern = 'abcdefghijklmnopqrstuvwxyzazaaz'
         darks = [ x for x in range(len(self._leds)) if not self._status[x]]
@@ -63,6 +67,8 @@ class WorkThread(threading.Thread):
                 msg = self.queue.get()
                 log.debug("run get msg:%s", msg)
                 if msg == 'down':
-                    self.push_down()         
+                    self._is_down_case = True
+                    self.push_down()
+                    self._is_down_case = False
             time.sleep(0.1)
         log.debug("run exit")
