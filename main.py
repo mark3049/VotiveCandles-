@@ -29,7 +29,7 @@ kneeler_confirm_pattern = 'madaedagahiaqabaacadaeid'
 noise_amount = max(1, LED_Width*LED_Height*5/100)  # Noise 多顆同時
 
 # 全亮後 30min 後自動熄滅60％ 1min turn off 1 led
-# 
+STANDBY_START_TIME = 3*60*60 # sec 
 
 
 def show_power_on(led):
@@ -102,6 +102,8 @@ class main_worker:
         self.led_status = [False for x in range(len(leds))] # 所有燈的狀態
         self.is_down = False
         self.noise_time = None
+        self.in_standby = False
+        
         
         self.kneeler_worker = WorkThread(
             leds, 
@@ -138,12 +140,20 @@ class main_worker:
             time.sleep(0.5)
         self.kneeler_worker.queue.put('down')
         self.is_down = True
+        if self.in_standby:
+            self.in_standby = False
+            log.info("standby mode turn off")
     
     def run_up_action(self):
         log.info("up")
         self.kneeler_worker.queue.put('up')
         self.is_down = False
-        self.noise_time = get_up_event_noise_time()        
+        self.noise_time = get_up_event_noise_time()
+        darks = [ x for x in range(len(self.led_status)) if not self.led_status[x]]
+        if len(darks) == 0:
+            log.info("standby mode turn on")
+            self.in_standby = True
+            self.begin_clear_time = time.time() + STANDBY_START_TIME
     
     def run_noise_shoot(self):
         log.info("turn on noise immediately")
@@ -181,6 +191,7 @@ class main_worker:
         self.noise_worker.start()
         self.is_down = False
         self.noise_time = get_noise_time()
+        log.info("next noise time %d", self.noise_time - time.time())
         
         while self.kneeler_worker.is_alive():
             action = self.get_action()
@@ -190,6 +201,19 @@ class main_worker:
 
             if not self.is_down:
                 self.check_noise_action()
+            
+            if self.in_standby and time.time() > self.begin_clear_time:
+                if not self.noise_worker.IsOnset():
+                    self.begin_clear_time = time.time() + 60
+                    ligths = [x for x in range(len(self.led_status)) if self.led_status[x]]
+                    index = random.choice(ligths)
+                    log.info("standby mode choice %d to turn off", index)
+                    self.led_status[index] = False
+                    self.leds[index] = (0, 0, 0)
+                    self.leds.show()
+                    if len(ligths) < len(self.leds)*6//10:
+                        self.in_standby = False
+
             time.sleep(0.1)
         
         self.kneeler_worker.is_exit = True    
