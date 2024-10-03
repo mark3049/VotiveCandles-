@@ -39,6 +39,9 @@ class FlickerPattern:
         self._index = 0
         self._len = len(pattern)
     
+    def begin(self, index):
+        self._index = index % self._len
+    
     def next(self):
         c = self._pattern[self._index]
         self._index = self._index+1 if self._index < self._len -1 else 0

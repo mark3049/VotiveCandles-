@@ -23,11 +23,11 @@ NEXT_NOISE_UP_EVENT = [5, 10] # 起來後,下一次Noise時間
 NOISE_DURATION_RANGE = [1, 3]
 MIN_KNEELING_TIME = 5  # 最小跪拜時間 sec
 MAX_KNEELING_TIME = 2*60 # 最大跪拜時間 sec, 重置所有燈號
-Sensitivity = 85
+min_sensor_value = 85 # 壓力下限 超過就判定為跪下事件 Down event 
 noise_pattern = 'madaedagahiaqabaacadaeidfgaaahaiaqbaqanaoqnbqnqnomnaadfao'
 kneeler_confirm_pattern = 'madaedagahiaqabaacadaeid'
+noise_amount = 10 # Noise 多顆同時
 
-# Noise 多顆同時 5%
 # 全亮後 30min 後自動熄滅60％ 1min turn off 1 led
 # 
 
@@ -86,7 +86,7 @@ def read_serial_action(port):
     v = read_serial(port)
     if not v:
         return None
-    s = [ x for x in v if x > Sensitivity]
+    s = [ x for x in v if x > min_sensor_value]
     if len(s) > 0: # 任何一個大於Sensitivity
         return "d" # down
     s = [ x for x in v if x < 10]
@@ -170,7 +170,8 @@ class main_worker:
             return
                 
         if time.time() > self.noise_time:
-            duration = self.noise_worker.Onset(random.randint(0, len(self.leds)-1))
+            samples = random.sample(range(len(self.leds)), noise_amount)
+            duration = self.noise_worker.Onset(samples)
             self.noise_time = get_noise_time(duration)
             log.info("noise planning to %s", (int)(self.noise_time-time.time()))
         else:

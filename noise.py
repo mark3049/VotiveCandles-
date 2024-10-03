@@ -15,18 +15,17 @@ class NoiseThread(threading.Thread):
         self._lightcolor = lightcolor # 燈光顏色
         self._states = states  # LED 明滅狀態
         self._pattern = pattern
-        self._duration = duration # units: sec
-        self._index = -1
+        self._duration = duration # units: sec        
         self._flickering = False        
         self.is_exit = False
 
 
-    def Onset(self, index):
+    def Onset(self, indexs):
         '''開始發作'''
-        self._index = index
+        self._indexs = indexs
         self._flickering = True
         self._total_sec = random.randint(self._duration[0], self._duration[1]) 
-        log.info("shoot %d %s", index, self._total_sec)
+        log.info("shoot %d %s", indexs, self._total_sec)
         return self._total_sec
     
     def Ending(self):
@@ -38,23 +37,27 @@ class NoiseThread(threading.Thread):
         return self._flickering
     
     def do_flicker(self):
-        index = self._index
-        state = self._states[index]
-        
-        fc = flicker.FlickerPattern(pattern=self._pattern, maxColor=self._lightcolor)
-
+        size = len(self._indexs)
+        fcs = []
+        for x in range(size):
+            fc = flicker.FlickerPattern(pattern=self._pattern, maxColor=self._lightcolor)
+            fc.begin(random.randint(0,100))
+            fcs.append(fc)
+            
         count = 0
         log.info("do flicker total:%s sec, pattern:%s", self._total_sec, self._pattern)
         ticks = self._total_sec / time_resolution
         while self.IsOnset():
-            self._leds[index] = fc.next()
+            for x in range(size):
+                self._leds[self._indexs[x]] = fcs[x].next()
             self._leds.show()
             time.sleep(time_resolution)
             count += 1
             if count > ticks:
                 break
         
-        self._leds[index] = self._lightcolor if state else (0,0,0)  # 復原燈號
+        for x in self._indexs:
+            self._leds[x] = self._lightcolor if self._states[x] else (0,0,0)  # 復原燈號
         self._leds.show()
         self.Ending()
         log.info("do flicker successed")
