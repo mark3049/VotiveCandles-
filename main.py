@@ -19,6 +19,7 @@ LED_Height = 6
 LightColor = (255,66,0)
 NoiseLightColor = (255, 248, 0)
 NEXT_NOISE = [15, 30] # 下一次Noise時間
+NEXT_NOISE_UP_EVENT = [5, 10] # 起來後,下一次Noise時間
 NOISE_DURATION_RANGE = [1, 3]
 MIN_KNEELING_TIME = 5  # 最小跪拜時間 sec
 MAX_KNEELING_TIME = 2*60 # 最大跪拜時間 sec, 重置所有燈號
@@ -28,7 +29,6 @@ kneeler_confirm_pattern = 'madaedagahiaqabaacadaeid'
 
 # Noise 多顆同時 5%
 # 全亮後 30min 後自動熄滅60％ 1min turn off 1 led
-# short noisetime after up event
 # 
 
 
@@ -73,9 +73,12 @@ def wait_serial_online(led):
         time.sleep(1)
 
 
-def get_next_noise(offset=0):
+def get_noise_time(offset=0):
     next = random.randint(NEXT_NOISE[0], NEXT_NOISE[1])
-    # log.debug("next noise incoming in %d", next)
+    return time.time() + next + offset
+
+def get_up_event_noise_time(offset = 0):
+    next = random.randint(NEXT_NOISE_UP_EVENT[0], NEXT_NOISE_UP_EVENT[1])
     return time.time() + next + offset
 
 
@@ -142,7 +145,7 @@ class main_worker:
         log.info("up")
         self.kneeler_worker.queue.put('up')
         self.is_down = False
-        self.noise_time = get_next_noise()
+        self.noise_time = get_up_event_noise_time()
     
     def run_noise_shoot(self):
         log.info("turn on noise immediately")
@@ -168,7 +171,7 @@ class main_worker:
                 
         if time.time() > self.noise_time:
             duration = self.noise_worker.Onset(random.randint(0, len(self.leds)-1))
-            self.noise_time = get_next_noise(duration)
+            self.noise_time = get_noise_time(duration)
             log.info("noise planning to %s", (int)(self.noise_time-time.time()))
         else:
             log.debug("noise count down:%d", (int)(self.noise_time-time.time()))
@@ -196,7 +199,7 @@ class main_worker:
         self.noise_worker.start()
         self.is_down = False
         self.reset_time = time.time() + MAX_KNEELING_TIME
-        self.noise_time = get_next_noise()
+        self.noise_time = get_noise_time()
         
         while self.kneeler_worker.is_alive():
             action = self.get_action()
