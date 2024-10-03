@@ -5,7 +5,7 @@ import logging
 log = logging.getLogger(__name__)
 
 def read_serial(port):
-    if not port.readable():
+    if not port.inWaiting():
         return None
     
     line = port.readline().decode("utf-8").rstrip()
