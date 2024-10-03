@@ -113,10 +113,10 @@ def main(leds, kb, port):
                 break;
             else:
                 action = key
-        
-        saction = read_serial_action(port)
-        if saction:
-            action = saction
+        else:
+            saction = read_serial_action(port)
+            if saction:
+                action = saction
         
         if action == 'd':
             log.info("down")
