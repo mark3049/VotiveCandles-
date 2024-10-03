@@ -15,7 +15,8 @@ flickerStrings = [
     'mmmaaammmaaammmabcdefaaaammmmabcdefmmmaaaa', # 8 CANDLE (third variety)
     'aaaaaaaazzzzzzzz', # 9 SLOW STROBE (fourth variety)
     'mmamammmmammamamaaamammma', # 10 FLUORESCENT FLICKER
-    'abcdefghijklmnopqrrqponmlkjihgfedcba' # 11 SLOW PULSE NOT FADE TO BLACK
+    'abcdefghijklmnopqrrqponmlkjihgfedcba', # 11 SLOW PULSE NOT FADE TO BLACK
+    'madaedagahiaqabaacadaeidfgaaahaiaqbaqanaoqnbqnqnomnaadfao',
 ]
 
 class FlickerColor:
@@ -51,7 +52,7 @@ if __name__ == "__main__":
     fc = FlickerColor((0,0,0), (255,255,255))
     kb = KBHit()
     leds.clear()
-    select = 0
+    select = 11
     v = FlickerPattern(flickerStrings[select])
     index = 0
     

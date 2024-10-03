@@ -16,11 +16,20 @@ log = logging.getLogger(__name__)
 
 LED_Width = 5
 LED_Height = 6
-LightColor = (255,255,255)
-NEXT_NOISE = [10, 60] # 下一次Noise時間
-NOISE_DURATION_RANGE = [3, 6]
-KNEELING_TIME = 5  # 最小跪拜時間 sec
+LightColor = (255,66,0)
+NoiseLightColor = (255, 248, 0)
+NEXT_NOISE = [15, 30] # 下一次Noise時間
+NOISE_DURATION_RANGE = [1, 3]
+MIN_KNEELING_TIME = 5  # 最小跪拜時間 sec
+MAX_KNEELING_TIME = 2*60 # 最大跪拜時間 sec, 重置所有燈號
 Sensitivity = 85
+noise_pattern = 'madaedagahiaqabaacadaeidfgaaahaiaqbaqanaoqnbqnqnomnaadfao'
+kneeler_confirm_pattern = 'madaedagahiaqabaacadaeid'
+
+# Noise 多顆同時 5%
+# 全亮後 30min 後自動熄滅60％ 1min turn off 1 led
+# short noisetime after up event
+# 
 
 
 def show_power_on(led):
@@ -64,10 +73,10 @@ def wait_serial_online(led):
         time.sleep(1)
 
 
-def get_next_noise():
+def get_next_noise(offset=0):
     next = random.randint(NEXT_NOISE[0], NEXT_NOISE[1])
-    log.debug("next noise incoming in %d", next)
-    return time.time() + next
+    # log.debug("next noise incoming in %d", next)
+    return time.time() + next + offset
 
 
 def read_serial_action(port):
@@ -82,75 +91,129 @@ def read_serial_action(port):
         return 'u'
 
 
-def main(leds, kb, port):
-    status = [False for x in range(len(leds))]
-    
-    kneeler_worker = WorkThread(
-        leds, 
-        LightColor, 
-        status, 
-        KNEELING_TIME
+class main_worker:
+    def __init__(self, leds, kb, port):
+        self.leds = leds
+        self.kb = kb
+        self.port = port
+        self.led_status = [False for x in range(len(leds))] # 所有燈的狀態
+        self.is_down = False
+        self.reset_time = None
+        self.noise_time = None
+        
+        self.kneeler_worker = WorkThread(
+            leds, 
+            LightColor, 
+            self.led_status,
+            kneeler_confirm_pattern, 
+            MIN_KNEELING_TIME
         )
-    kneeler_worker.start()
+        self.noise_worker = NoiseThread(
+            leds, 
+            NoiseLightColor, 
+            self.led_status,
+            noise_pattern,
+            NOISE_DURATION_RANGE
+            )
     
-    noise_worker = NoiseThread(
-        leds, 
-        LightColor, 
-        status, 
-        NOISE_DURATION_RANGE
-        )
-    noise_worker.start()
-
-    is_down = False
-    noise_time = get_next_noise()
-    while kneeler_worker.is_alive():
+    def get_action(self):
         action = None
 
-        if kb and kb.kbhit():
-            key = kb.getch()
+        if self.kb and self.kb.kbhit():
+            key = self.kb.getch()
             keycode = ord(key)
             if keycode == 27: # ESC
-                break;
+                action = 'ESC'
             else:
                 action = key
-        else:
-            saction = read_serial_action(port)
-            if saction:
-                action = saction
-        
-        if action == 'd':
-            log.info("down")
-            if not is_down:
-                if noise_worker.IsOnset(): # 停止噪音動作
-                    noise_worker.Ending()
-                    time.sleep(0.5)
-                kneeler_worker.queue.put('down')
-                is_down = True
-        elif action == 'u':
-            if is_down:
-                log.info("up")
-                kneeler_worker.queue.put('up')
-                is_down = False
-        elif action == 's':  # keycode, Debug用
-            if is_down:
-                continue
-            noise_time = time.time() - 1
-
-        if is_down or noise_worker.IsOnset(): # 延後發作
-            if time.time() > noise_time:
-                noise_time = get_next_noise()
-        
-        if time.time() > noise_time:
-            if noise_worker.IsOnset():
-                noise_time = get_next_noise()
-            else:
-                noise_worker.Onset(random.randint(0, len(leds)))
-        time.sleep(1)
+            return action
+        return read_serial_action(self.port)
     
-    kneeler_worker.is_exit = True    
-    kneeler_worker.join()
-    noise_worker.is_exit = True
-    noise_worker.join()
+    def run_down_action(self):
+        log.info("down")
+        if self.noise_worker.IsOnset(): # 停止噪音動作
+            self.noise_worker.Ending()
+            time.sleep(0.5)
+        self.kneeler_worker.queue.put('down')
+        self.is_down = True
+        self.reset_time = time.time() + MAX_KNEELING_TIME
+    
+    def run_up_action(self):
+        log.info("up")
+        self.kneeler_worker.queue.put('up')
+        self.is_down = False
+        self.noise_time = get_next_noise()
+    
+    def run_noise_shoot(self):
+        log.info("turn on noise immediately")
+        self.noise_time = time.time() - 1
+
+    def run_actions(self, action):
+        if action == 'd':
+            if not self.is_down:
+                self.run_down_action()
+        elif action == 'u':
+            if self.is_down: 
+                self.run_up_action()
+        elif action == 's':  # keycode, Debug用
+            if not self.is_down:
+                self.run_noise_shoot()
+
+    def check_noise_action(self):
+        if self.noise_worker.IsOnset():
+            return
+
+        if self.is_down:
+            return
+                
+        if time.time() > self.noise_time:
+            duration = self.noise_worker.Onset(random.randint(0, len(self.leds)-1))
+            self.noise_time = get_next_noise(duration)
+            log.info("noise planning to %s", (int)(self.noise_time-time.time()))
+        else:
+            log.debug("noise count down:%d", (int)(self.noise_time-time.time()))
+
+    def check_reset_action(self):
+
+        if not self.is_down:
+            return
+        
+        if time.time() < self.reset_time:
+            log.debug("reset count down:%d", (int)(self.reset_time-time.time()))
+            return
+        
+        self.noise_worker.Ending()
+        time.sleep(0.5)
+
+        for index in range(len(self.led_status)):
+            self.led_status[index] = False
+        self.leds.clear()
+        self.is_down = False
+        log.info("reset successed")
+
+    def run(self):
+        self.kneeler_worker.start()
+        self.noise_worker.start()
+        self.is_down = False
+        self.reset_time = time.time() + MAX_KNEELING_TIME
+        self.noise_time = get_next_noise()
+        
+        while self.kneeler_worker.is_alive():
+            action = self.get_action()
+            if action == 'ESC':
+                break;            
+            self.run_actions(action)
+
+            if self.is_down:
+                self.check_reset_action()
+            else:
+                self.check_noise_action()
+            time.sleep(1)
+        
+        self.kneeler_worker.is_exit = True    
+        self.kneeler_worker.join()
+        self.noise_worker.is_exit = True
+        self.noise_worker.join()
 
 
 def parser_opt():
@@ -177,7 +240,8 @@ if __name__ == "__main__":
             show_power_on(led)
         wait_serial_online(led)
         port = serial.Serial('/dev/ttyUSB0',115200)
-        main(led, kb, port)
+        main = main_worker(led, kb, port)
+        main.run()
     except Exception as ex:
         log.exception(ex)
     finally:
