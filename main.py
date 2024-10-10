@@ -14,16 +14,16 @@ from noise import NoiseThread
 
 log = logging.getLogger(__name__)
 
-LED_Width = 5
-LED_Height = 6
+LED_Width = 16
+LED_Height = 8
 LightColor = (255,66,0)
-NoiseLightColor = (255, 248, 0)
-NEXT_NOISE = [15, 30] # 下一次Noise時間
-NEXT_NOISE_UP_EVENT = [5, 10] # 起來後,下一次Noise時間
-NOISE_DURATION_RANGE = [1, 3]
+NoiseLightColor = (255, 152, 80)
+NEXT_NOISE = [10, 30] # 下一次Noise時間
+NEXT_NOISE_UP_EVENT = [0, 1] # 起來後,下一次Noise時間
+NOISE_DURATION_RANGE = [1, 5]
 MIN_KNEELING_TIME = 5  # 最小跪拜時間 sec
 
-min_sensor_value = 85 # 壓力下限 超過就判定為跪下事件 Down event 
+min_sensor_value = 80 # 壓力下限 超過就判定為跪下事件 Down event 
 noise_pattern = 'madaedagahiaqabaacadaeidfgaaahaiaqbaqanaoqnbqnqnomnaadfao'
 kneeler_confirm_pattern = 'madaedagahiaqabaacadaeid'
 noise_amount = [5, 20]  # Noise 多顆同時
@@ -74,11 +74,11 @@ def wait_serial_online(led):
 
 
 def get_noise_time(offset=0):
-    next = random.randint(NEXT_NOISE[0], NEXT_NOISE[1])
+    next = random.randint(NEXT_NOISE[0]*1000, NEXT_NOISE[1]*1000) / 1000
     return time.time() + next + offset
 
 def get_up_event_noise_time(offset = 0):
-    next = random.randint(NEXT_NOISE_UP_EVENT[0], NEXT_NOISE_UP_EVENT[1])
+    next = random.randint(NEXT_NOISE_UP_EVENT[0]*1000, NEXT_NOISE_UP_EVENT[1]*1000) /1000.0
     return time.time() + next + offset
 
 
@@ -89,7 +89,7 @@ def read_serial_action(port):
     s = [ x for x in v if x > min_sensor_value]
     if len(s) > 0: # 任何一個大於Sensitivity
         return "d" # down
-    s = [ x for x in v if x < 10]
+    s = [ x for x in v if x < 30]
     if len(s) == len(v): # 全部小於10
         return 'u'
 
@@ -139,6 +139,7 @@ class main_worker:
             self.noise_worker.Ending()
             time.sleep(0.5)
         self.kneeler_worker.queue.put('down')
+        self.noise_time = get_up_event_noise_time(MIN_KNEELING_TIME+1.5)
         self.is_down = True
         if self.in_standby:
             self.in_standby = False
@@ -174,7 +175,7 @@ class main_worker:
         if self.noise_worker.IsOnset():
             return
 
-        if self.is_down:
+        if self.kneeler_worker.IsDown():
             return
                 
         if time.time() > self.noise_time:
@@ -202,7 +203,7 @@ class main_worker:
                 break;            
             self.run_actions(action)
 
-            if not self.is_down:
+            if not self.kneeler_worker.IsDown():
                 self.check_noise_action()
             
             if self.in_standby and time.time() > self.begin_clear_time:
@@ -248,7 +249,7 @@ if __name__ == "__main__":
         if not argc.skip:
             show_power_on(led)
         wait_serial_online(led)
-        port = serial.Serial('/dev/ttyUSB0',115200)
+        port = serial.Serial('/dev/ttyUSB0',9600)
         main = main_worker(led, kb, port)
         main.run()
     except Exception as ex:

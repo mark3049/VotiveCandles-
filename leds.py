@@ -32,16 +32,16 @@ class LEDs(neopixel.NeoPixel):
     
 
 def _test_meteor(led, color):
-    for index in range(30):
+    for index in range(len(led)):
         led[index] = color
         led.show()
         time.sleep(1/15)
 
 def _test_random(led):
     while True:
-        index = random.randrange(0,30)
-        led.clear()
-        led[index] = (127,127,127)
+        index = random.randrange(0,len(led))
+        #led.clear()
+        led[index] = (255,66,0)
         led.show()
         time.sleep(1/30)
 
@@ -60,11 +60,12 @@ def _test_run(led):
 
 
 if __name__ == "__main__":
-    led = LEDs(5, 6)
+    led = LEDs(16, 8)
     try:
         print('total led:', len(led))
-        _test_run(led)
+        # _test_run(led)
         _test_random(led)
+
     except Exception as e:
         print("except:", e)
     finally:
